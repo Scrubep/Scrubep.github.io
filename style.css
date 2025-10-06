@@ -71,3 +71,16 @@ h2 {
 .assignment p {
   margin-top: 0.5em;
 }
+
+pre {
+  background-color: lightgray;
+}
+
+section {
+  margin-top: 1.5em;
+}
+
+section p {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}

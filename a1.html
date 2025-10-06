@@ -4,15 +4,115 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
 
-    <title>Example Student's HCDE 439 Physical Computing Page!</title>
+    <title>Joey's HCDE 439 Physical Computing Page!</title>
 
     <link href="style.css" rel="stylesheet" type="text/css" />
   </head>
   <body>
-    <h1>Example Student's Assignment 1!</h1>
+    <h1>Assignment 1: Blink!</h1>
     <div class="header">
-      <img src="red-panda.jpg" />
-      <p>Here is all the documentation for assignment 1!</p>
+      <img src="a1-assets/Blink_Circuit_Side.jpg" /> <!--Insert Circuit Image Here-->
+      <p>
+        Assignment 1 was our introduction to basic circuitry
+        and arduino. The goal of this assignment is to get three lights
+        to blink independently and in a pattern. The picture on the left
+        is the finished result of my simple first circuit.
+      </p>
     </div>
+
+    <section>
+      <h2>Schematic</h2>
+      <img src="a1-assets/Blink_Schematic.jpg" /> <!--Insert Schematic Here-->
+      <p>
+        This is a schematic of the finished circuit. From the arduino, I connected
+        wires to three pins (pin 13, 12, and 11). The circuit as a whole is in parallel
+        since they are different paths that go to the same ground. Each path has a 220 Ω
+        resistor as well as an LED. The reason I chose 220 Ω resistors is because
+        of Ohm's Law (Voltage = Current x Resistance). Each LED I chose (red, green, and yellow)
+        have a voltage drop of 1.8 V and I knew that I wanted .02 A of current running through
+        each path. Since the circuit is in parallel, I also knew that the voltage would be 5 V in each 
+        branch. I used Ohm's law to calculate the resistance needed for each path
+        which ended up being 160 Ω. I didn't have any 160 Ω resistors so I ended up using the closest
+        ones I had that were higher than 160 Ω since I didn't want to burn out the LEDs.
+      </p>
+      <img src="a1-assets/Blink_Calculations.png"/>
+    </section>
+
+    <section>
+      <h2>Code</h2>
+      <pre><code>
+        void setup() {
+          pinMode(LED_BUILTIN, OUTPUT); // Sets an output to pin 13
+          pinMode(12, OUTPUT); // Sets an output to pin 12
+          pinMode(11, OUTPUT); // Sets an output to pin 11
+        }
+
+        void loop() {
+          // First light on
+          digitalWrite(LED_BUILTIN, HIGH); // Pin 13 LED is on
+          digitalWrite(12, LOW); // Pin 12 is off
+          digitalWrite(11, LOW); // Pin 11 is off
+          delay(1000); // The first light is on for 1 second while the others are off
+          
+          // Second light on
+          digitalWrite(LED_BUILTIN, LOW); // Pin 13 is off
+          digitalWrite(12, HIGH); // Pin 12 is on
+          digitalWrite(11, LOW); // Pin 13 is off
+          delay(1000); // The second light is on for 1 second while the others are off
+
+          // Third light on
+          digitalWrite(LED_BUILTIN, LOW); // Pin 13 is off
+          digitalWrite(12, LOW); // Pin 12 is off
+          digitalWrite(11, HIGH); // Pin 11 is on
+          delay(1000); // The third light is on for 1 second while the others are off
+        }
+        </code></pre> <!--Insert Code Snippet Here-->
+
+      <p>
+        This is the arduino code that runs to blink the LEDs. In a nutshell,
+        it makes it so each LED is on for 1 second while the other LEDs 
+        are off. The LED is determined by what pin it's wired to as seen in the 
+        schematic. The loop is set to go on forever since there's no end condition.
+      </p>
+    </section>
+
+    <section>
+      <h2>Circuit Operation</h2>
+      <img src="a1-assets/Blink_Video.gif" /> <!--Insert GIF Here-->
+      <p>
+        This is what the circuit looks like when operating. The loop begins
+        with the red LED, goes to the green LED, then the yellow LED, and
+        then loops back to the red LED and so on.
+      </p>
+    </section>
+
+    <section>
+      <h2>Additional Questions</h2>
+      
+      <p><b>1. Draw a graph where the X axis is time and the Y axis is 
+        voltage across the LEDs. Draw a line for each of your 3 LEDs.</b></p>
+      <img src="a1-assets/Blink_Graph.jpg" />
+
+      <p><br><b>2. How many LEDs could you blink independently with your Arduino? 
+        How much current would that draw?</b></p>
+      <p>
+        The total number of pins on my arduino is 13 so it would be possible
+        to attach 13 LEDs in total. But if I were to do that and I wanted .02 A of current
+        to go through each branch, it would be a total of .26 A or 260 mA which is above the
+        recommended amount of 200 mA from the arduino. So taking that into account, it 
+        would be around 10 LEDs.
+      </p>
+
+      <p><br><b>3. How fast do you need to blink your LEDs until you no longer can 
+        tell that they are blinking?</b></p>
+      <p>1 milisecond.</p>
+
+      <p><br><b>4. AI Tools</b></p>
+      <p>I used AI tools mostly for help with thinking through voltage, current, and
+        resistance just to ensure that I had the right idea about building my circuit.
+        It was pretty helpful in pointing me towards Ohm's Law and if I was doing my
+        calculations properly.
+      </p>
+      </section>
   </body>
 </html>
