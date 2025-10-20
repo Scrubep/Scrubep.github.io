@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>Joey's HCDE 439 Physical Computing Page!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>A3: Input and Output!</h1>
+    <div class="header">
+      <img src="a3-assets/A3-circuit.jpg" /> <!--Insert Circuit Image Here-->
+      <p>
+        For this assignment, we were tasked with creating a circuit using a
+        voltage divider with a potentiometer and another resistor. The potentiometer
+        allows it so that we can change its resistance based on a physical change. For
+        my circuit, I used a photoresistor to change the color of an RGB LED depending 
+        on the light levels.
+      </p>
+    </div>
+
+    <section>
+      <h2>Schematic</h2>
+      <img src="a3-assets/A3-schematic.jpg" /> <!--Insert Schematic Here-->
+      <p>
+        This schematic depicts the voltage divider and the RGB LED I used.
+        The photoresistor is variable and I found that it has a general range
+        of 3.5 kΩ to 200 kΩ. If I wanted a certain voltage, I would need to use
+        the voltage divider equation but for my purposes, I just needed something
+        between that range for the second resistor so I decided to use a 10 kΩ resistor. 
+        The equations below are for the resistors I used for the LEDs within the RGB
+        LED.
+      </p>
+    </section>
+
+    <section>
+      <h2>Code</h2>
+      <pre><code>
+        // Pin Numbers
+        const int analogInPin = A0;
+        const int bluePin = 9;
+        const int greenPin = 10;
+        const int redPin = 11;
+
+        // Variables:
+        int sensorValue;
+        int mappedValue;
+        int sensorMin = 1023;
+        int sensorMax = 0;
+
+        void setup() {
+        // Setting the three pins for the RGB LED to be outputs
+        pinMode(redPin, OUTPUT);
+        pinMode(greenPin, OUTPUT);
+        pinMode(bluePin, OUTPUT);
+
+        // To signal the start of calibration
+        digitalWrite(redPin, HIGH);
+        
+        // 5 seconds of calibration
+        while (millis() < 5000) {
+            
+            // Reading the value of the sensor from A0
+            sensorValue = analogRead(analogInPin);
+            
+            // Sets maximum to highest value within the 5 seconds
+            if (sensorValue > sensorMax) {
+            sensorMax = sensorValue;
+            }
+
+            // Sets the minimum to lowest value within the 5 seconds
+            if (sensorValue < sensorMin) {
+            sensorMin = sensorValue;
+            }
+        }
+
+        // Indicate the end of testing
+        digitalWrite(redPin, LOW);
+        
+        // Begins communication between Arduino and computer
+        Serial.begin(9600);
+        }
+
+        void loop() {
+        // Reads value of sensor from A0
+        sensorValue = analogRead(analogInPin);
+        
+        // Constrains the value of the sensor within the bounds of the
+        // minimum and maximum found during calibration
+        sensorValue = constrain(sensorValue, sensorMin, sensorMax);
+        
+        // Prints the sensor value that's found to the serial port
+        Serial.print("Sensor Value: ");
+        Serial.print(sensorValue);
+
+        // Maps the sensor value found to a value betwen 0 and 255
+        mappedValue = map(sensorValue, sensorMin, sensorMax, 0, 255);
+        
+        // Prints out the mapped value that correlates to the sensor value above
+        Serial.print("\t Mapped Value: ");
+        Serial.println(mappedValue);
+
+        // When the mapped value is 245 or above, it becomes 255 so the red
+        // light doesn't blink constantly when the sensor is inconsistent
+        if (mappedValue >= 245) {
+            mappedValue = 255;
+        }
+
+        // Changes the brightness of the red and blue values of the RGB LED
+        // based on the mapped values found
+        analogWrite(redPin, mappedValue);
+        analogWrite(bluePin, 255 - mappedValue);
+        }
+      </code></pre> <!--Insert Code Snippet Here-->
+
+      <p>
+        The code works by reading the sensor and setting the RGB LED based on those
+        readings. This is done by mapping the value we get from the sensor to a value
+        between 0 and 255 which controls how bright the red and blue LEDs are. The light
+        is more red when the environment is lighter and more blue when it's darker. During the
+        setup, I have calibration code to find the max and min sensor values. I can then
+        use those values to constrain the values found by the sensor to make it more consistent.
+      </p>
+    </section>
+
+    <section>
+      <h2>Circuit Operation</h2>
+      <img src="a3-assets/A3-circuit-operation.gif" /> <!--Insert GIF Here-->
+
+    </section>
+
+    <section>
+      <h2>Additional Questions</h2>
+      
+      <p><b>1. In your voltage divider, can the variable resistor be either R1 
+        or R2 or does it need to be one or the other? Justify your answer 
+        with example calculations.</b></p>
+
+      <p>
+        In my voltage divider, the variable resistor must be R1 and not R2. In the
+        image below (question 2), I found the voltage at V-measure of my voltage dividers
+        at 4 different points within the gif above. Using the voltage divider equation and
+        swapping R1 and R2, I would get 1.7 V for when the photoresistor is exposed to the most
+        light and 4.9 V for when the photoresistor is in the dark. 
+
+        <br><br>
+
+        So if we were to swap the resistors, the sensor values would be reverse, meaning
+        that the LED would work in the opposite way (blue when brighter and red when darker). So technically,
+        the LED would still work but I would need the variable resistor to be R1 for it to 
+        operate as I intended it to.
+      </p>
+
+      <p><br><b>2. Draw a graph where the x-axis is time and the y-axis is voltage. 
+        Plot the voltage at V-measure of your voltage divider of your shared gif.</b></p>
+
+        <img src="a3-assets/A3-graph.jpg" />
+      <p>
+        I calculated the values above based on my multimeter but the values I got may be different
+        from what they actually were from the gif. This is because I used the multimeter when it was
+        brighter outside thus, exposing the photoresistor to more light.
+      </p>
+
+      <p><br><b>3. AnalogWrite and analogRead are respectively 8-bit and 10-bit values. 
+        Imagine you had 10-bit PWM and a 16-bit analog-to-digital converter instead. 
+        How would this change your map() code? Explain your answer.</b></p>
+      <p>
+        If I had a 10-bit PWM, the values that I could use for the RGB LED would
+        range from 0-1023 instead of 0-255 when using digitalWrite. And if I had a 16-bit 
+        analog-to-digital converter, we could read input voltages as values from 0-16,383
+        instead of 0-1023. This would allow for more precision in my circuit. But with this
+        change, I would need to change my map() code so that instead of mapping the sensor value
+        to a range of 0-255, I would need to map it from 0-1023. However, I could keep sensorMin
+        and sensorMax since I have the calibration code in my setup.
+        
+        <br><br>
+
+        This is what it would look like: <b>map(sensorValue, sensorMin, sensorMax, 0, 1023);</b>
+      </p>
+
+      </section>
+  </body>
+</html>
