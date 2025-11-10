@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>Joey's HCDE 439 Physical Computing Page!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>A5: Transistors!</h1>
+    <div class="header">
+      <img src="a5-assets/a5-circuit.jpg" /> <!--Insert Circuit Image Here-->
+      <p>
+        For this assignment, we were tasked with creating a circuit 
+        using a transistor for higher voltage. I decided to make a
+        circuit where an LED strip lights up based on the sound of a
+        sound sensor.
+      </p>
+    </div>
+
+    <section>
+      <h2>Schematic</h2>
+      <img src="a5-assets/a5-circuit-schematic.jpg" /> <!--Insert Schematic Here-->
+      <p>
+        The sound sensor is simple to connect, with pins for A0, 
+        ground, and power. The LED strip is connected to pin 9 through 
+        a transistor. The transistor acts as a switch, allowing the Arduino 
+        to control the higher current from the 12V power supply needed for the 
+        LED strip. The brightness of the LED strip is based on the sound sensor
+        value.
+      </p>
+    </section>
+
+    <section>
+      <h2>Code</h2>
+      <pre><code>
+        // Sound pin
+        const int soundPin = A0;
+
+        // LED strip pin
+        const int ledPin = 9;
+
+        // Value of the sound sensor
+        int sensorValue;
+
+        // Max and min values for the sound sensor
+        int maxValue, minValue;
+
+        // Max and min values for the calculated amplitude
+        int maxAmp = 0;
+        int minAmp = 1023;
+
+        void setup() {
+        // Signals the start of calibration
+        pinMode(13, OUTPUT);
+        digitalWrite(13, HIGH);
+
+        // Calibration for 5 seconds
+        while (millis() < 5000) {
+            // Set in and max value of sound sensor
+            maxValue = 0;
+            minValue = 1023;
+
+            // Store the start of the calibration loop
+            int start = millis();
+
+            // Sample for 50 ms
+            while (millis() - start < 50) {
+            // Find sound sensor value
+            sensorValue = analogRead(soundPin);
+            // Set max and min values from what's found from
+            // the sensor
+            if (sensorValue > maxValue) maxValue = sensorValue;
+            if (sensorValue < minValue) minValue = sensorValue;
+            }
+
+            // Calculate amplitude by subtracting max and min
+            int amplitude = maxValue - minValue;
+
+            // Set min and max amplitude during calibration
+            if (amplitude > maxAmp) maxAmp = amplitude;
+            if (amplitude < minAmp) minAmp = amplitude;
+        }
+        
+        // Signal end of calibration
+        pinMode(9, OUTPUT);
+        // Start serial communication
+        Serial.begin(9600);
+        }
+
+        void loop() {
+        // Set in and max value of sound sensor
+        maxValue = 0;
+        minValue = 1023;
+
+        // Store the start of the calibration loop
+        int start = millis();
+
+        // Sample for 50 ms
+        while (millis() - start < 50) {
+            // Find sound sensor value
+            sensorValue = analogRead(soundPin);
+            // Set max and min values from what's found from
+            // the sensor
+            if (sensorValue > maxValue) maxValue = sensorValue;
+            if (sensorValue < minValue) minValue = sensorValue;
+        }
+
+        // Calculate amplitude by subtracting max and min
+        int amplitude = maxValue - minValue;
+
+        // Map the amplitude to a brightness value for the LED strip
+        int brightness = map(amplitude, minAmp, maxAmp, 0, 255);
+
+        // Lights up LED strip based on the brightness
+        analogWrite(ledPin, brightness);
+
+        // Print both amplitude and brightness values
+        Serial.print("Amplitude: ");
+        Serial.print(amplitude);
+        Serial.print("\tBrightness: ");
+        Serial.println(brightness);
+
+        // Delay by 100 ms
+        delay(100);
+        }
+      </code></pre> <!--Insert Code Snippet Here-->
+
+      <p>
+        The sound sensor seems to change really rapidly so when
+        I was testing it, I found I needed to sample really quickly and
+        compute amplitude so I found the highest and lowest values of
+        the sensor and then subtracted them. I also have a calibration
+        setup for finding the max and min amplitude. This allowed me to
+        use the map function to find a brightness level for the LED strip
+        that correlated to the amplitude.
+      </p>
+    </section>
+
+    <section>
+      <h2>Circuit Operation</h2>
+      <img src="a5-assets/a5-operation.gif" /> <!--Insert GIF Here-->
+      <p>
+        The sound sensor is in the box and I found that hitting
+        the box was the best way to consistently see the LED strip
+        light up. Note that the LED strip is less bright at times since
+        there's less sound (vibration).
+      </p>
+    </section>
+
+    <section>
+      <h2>Additional Questions</h2>
+      
+      <p><b>1. This is the datasheet for the n-mosfet transistor: 
+        https://www.diodes.com/assets/Datasheets/DMT6009LCT.pdf. What 
+        is the absolute maximum amount of current between pins 2 and 3?</b></p>
+
+      <p>
+        According to the data sheet, in maximum ratings, the continuous drain current
+        is 37.2 A at +25°C. For +100°C, it's 29.8 A. For pulsed drain current and maximum
+        body diode forward current, it's 80 A. Since the question is asking for the current
+        between pins 2 and 3, the answer is 37.2 A (considering the temperature is average).
+      </p>
+
+      <p><br><b>2. Draw a schematic for a circuit with using at least your 
+        arduino, a DC motor, a flyback diode, and capacitors between power and 
+        ground. Find parts with datasheets you could use for each of these schematic
+        components.</b></p>
+
+        <img src="a5-assets/a5-transistor-motor.jpg" />
+      <p>
+        <ul>
+            <li><a href="https://docs.arduino.cc/resources/datasheets/A000066-datasheet.pdf">Arduino</a></li>
+            <li><a href="https://education.ti.com/html/webhelp/EG_Innovator/EN/content/eg_innovsys/m_bb-datasheets/bb_ds_smalldcmotor.HTML">DC Motor</a></li>
+            <li><a href="https://www.ti.com/lit/ds/symlink/lm5181.pdf">Flyback Diode</a></li>
+            <li><a href="https://docs.rs-online.com/49da/0900766b80fa3a92.pdf">Capacitor</a></li>
+        </ul>
+      </p>
+
+      <p><br><b>3. Draw a schematic using at least your arduino, this chip, and two motors. 
+        Write (pseudo) code that shows how you would move the motors both forward, both back,
+        then one forward one back, and one back then forward.</b></p>
+
+        <img src="a5-assets/a5-hbridge.jpg" />
+
+      <p>
+      <pre><code>
+            // The chip acts as an H-Bridge where we can
+            // control what direction the current will flow through
+            // the motor. So all we need to do is manipulate the pins.
+            // Using digitalWrite.
+
+            // Moving Motors Both Forward:
+            // Set pin 8 to HIGH
+            // Set pin 7 to LOW
+            // Set pin 5 to HIGH
+            // Set pin 4 to LOW
+
+            // Moving Motors Both Backwards:
+            // Set pin 8 to LOW
+            // Set pin 7 to HIGH
+            // Set pin 5 to LOW
+            // Set pin 4 to HIGH
+
+            // First Motor Forward, Second Motor Backwards:
+            // Set pin 8 to HIGH
+            // Set pin 7 to LOW
+            // Set pin 5 to LOW
+            // Set pin 4 to HIGH
+
+            // Second Motor Forward, First Motor Backwards: 
+            // Set pin 8 to LOW
+            // Set pin 7 to HIGH
+            // Set pin 5 to HIGH
+            // Set pin 4 to LOW
+        </code></pre>
+        </p>
+
+      <p><br><b>4. AI Tools</b></p>
+      <p>
+        I ended up using AI for help on using the sound sensor as well as the
+        last question with the 2 motors. I was confused with how my sound sensor
+        only picked up one value despite the sound I'd make so using AI guided me
+        in calculating the amplitude to get a greater range of values. AI also helped
+        me with understanding what each pin did on the L293D chip.
+      </p>
+      </section>
+  </body>
+</html>
