@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>Joey's HCDE 439 Physical Computing Page!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>A6: Talking to the Web!</h1>
+    <div class="header">
+      <img src="a6-assets/a6-circuit.JPG" /> <!--Insert Circuit Image Here-->
+      <p>
+        In this assignment, we were tasked with sending data to the web 
+        from the arduino and then sending data back from the web to the
+        arduino. For this assignment, I had a joystick that could control
+        a cursor over a color gradient which would then determine the light
+        of the rgb LED I connected to my arduino.
+      </p>
+    </div>
+
+    <section>
+      <h2>Schematic</h2>
+      <img src="a6-assets/a6-joystick.jpg" /> <!--Insert Schematic Here-->
+      <img src="a6-assets/a6-rgb.jpg"/> <!--Insert Calculations Here-->
+      <p>
+        The schematic is very simple where I connected the joystick to power, ground,
+        and two analog pins. This is so the values of the x and y coordinates can
+        be sent as serial data to the arduino and in turn, to the web. I also wired
+        an RGB light to pins 9, 10, 11, and ground. The calculations for the resistors
+        I used are above.
+      </p>
+    </section>
+
+    <section>
+      <h2>Code</h2>
+      <p><b>Arduino Code</b></p>
+      <pre><code>
+        // rgb values
+        int r, g, b;
+
+        void setup() {
+        // Begins Serial input
+        Serial.begin(115200);
+
+        // Sets pin modes to outputs for rgb
+        pinMode(9, OUTPUT);
+        pinMode(10, OUTPUT);
+        pinMode(11, OUTPUT);
+        }
+
+        void loop() {
+        // Read values from A0 and A1 connected to joystick
+        int value1 = analogRead(A0);
+        int value2 = analogRead(A1);
+
+        //Print values found from joystick
+        Serial.print(value1);
+        Serial.print(",");
+        Serial.println(value2);
+
+        // Checks of serial data is sent from js
+        if (Serial.available()) {
+            // Reads the data
+            String line = Serial.readStringUntil('\n');
+            // Finds index of commas in the data sent
+            int comma1 = line.indexOf(',');
+            int comma2 = line.lastIndexOf(',');
+
+            // Parses the data into the rgb values by splitting
+            // it by comma
+            if (comma1 > 0 && comma2 > comma1) {
+            r = line.substring(0, comma1).toInt();
+            g = line.substring(comma1 + 1, comma2).toInt();
+            b = line.substring(comma2 + 1).toInt();
+
+            // Sends rgb values to rgb LED
+            analogWrite(9, r);
+            analogWrite(10, g);
+            analogWrite(11, b);
+            }
+        }
+        }
+      </code></pre> <!--Insert Code Snippet Here-->
+
+      <p><b>JavaScript</b></p>
+      <pre><code>
+        const BAUD_RATE = 115200;
+        let c1, c2; // Color of the gradient
+        let cursorX = 0; // cursor horizontal position for joystick
+        let cursorY = 0; // cursor vertical position for joystick
+        let port, connectBtn;
+        let gradientGraphics;   // offscreen buffer
+        let serialBuffer = "";  // buffer for serial data
+
+        function setup() {
+        createCanvas(windowWidth, windowHeight);
+        noStroke();
+
+        setupSerial();   // Connect to arduino
+
+        // Gradient colors
+        c1 = color(255, 0, 0); 
+        c2 = color(0, 0, 255);
+
+        // Create an offscreen graphics buffer
+        gradientGraphics = createGraphics(windowWidth, windowHeight);
+
+        drawGradientToBuffer();
+        }
+
+        function draw() {
+        const portIsOpen = checkPort();
+        if (!portIsOpen) return;
+
+        // Draw pre-rendered gradient
+        image(gradientGraphics, 0, 0);
+
+        // Read serial data safely
+        let data = port.read();
+        if (data) serialBuffer += data;
+
+        // Split into lines
+        let lines = serialBuffer.split("\n");
+        serialBuffer = lines.pop(); // save partial line for next frame
+
+        // Checks the lines from arduino
+        for (let line of lines) {
+            if (!line.includes(",")) continue;
+            let cursorArray = line.trim().split(",");
+            if (cursorArray.length < 2) continue;
+
+            // Sets x and y coordinates for the joystick cursor
+            let x = Number(cursorArray[0]);
+            let y = Number(cursorArray[1]);
+            if (isNaN(x) || isNaN(y)) continue;
+
+            // Map Arduino analog values to screen
+            let targetX = map(x, 0, 1023, 0, windowWidth);
+            let targetY = map(y, 0, 1023, 0, windowHeight);
+
+            // Smooth cursor movement
+            cursorX = lerp(cursorX, targetX, 0.2);
+            cursorY = lerp(cursorY, targetY, 0.2);
+        }
+
+        // Keep cursor on screen
+        cursorX = constrain(cursorX, 0, width - 1);
+        cursorY = constrain(cursorY, 0, height - 1);
+
+        // Read hovered pixel from the buffer
+        let hovered = gradientGraphics.get(round(cursorX), round(cursorY));
+
+        // Draw cursor
+        fill(255);
+        noStroke();
+        circle(cursorX, cursorY, 18);
+
+        // Draw swatch
+        fill(hovered);
+        rect(10, 10, 40, 40);
+
+        // Draw RGB text
+        fill(255);
+        textSize(14);
+        text(`R: ${hovered[0]}  G: ${hovered[1]}  B: ${hovered[2]}`, 60, 35);
+
+        // Sends rgb data to arduino
+        if (port.opened()) {
+            let r = hovered[0];
+            let g = hovered[1];
+            let b = hovered[2];
+            port.write(`${r},${g},${b}\n`);
+        }
+        }
+
+        // Draws the gradient once into the buffer
+        function drawGradientToBuffer() {
+        for (let x = 0; x < width; x++) {
+            let amt = map(x, 0, width, 0, 1);
+            let col = lerpColor(c1, c2, amt);
+            gradientGraphics.stroke(col);
+            gradientGraphics.line(x, 0, x, height);
+        }
+        }
+
+        function setupSerial() {
+        port = createSerial();
+
+        // Check for previously used ports
+        let usedPorts = usedSerialPorts();
+        if (usedPorts.length > 0) {
+            port.open(usedPorts[0], BAUD_RATE);
+        }
+
+        // Create connect button
+        connectBtn = createButton("Connect to Arduino");
+        connectBtn.position(5, 5);
+        connectBtn.mouseClicked(onConnectButtonClicked);
+        }
+
+        function checkPort() {
+        if (!port.opened()) {
+            // If the port is not open, change button text
+            connectBtn.html("Connect to Arduino");
+            // Set background to gray
+            background("gray");
+            return false;
+        } else {
+            // Otherwise we are connected
+            connectBtn.html("Disconnect");
+            return true;
+        }
+        }
+
+        function onConnectButtonClicked() {
+        // When the connect button is clicked
+        if (!port.opened()) {
+            // If the port is not opened, we open it
+            port.open(BAUD_RATE);
+        } else {
+            // Otherwise, we close it!
+            port.close();
+        }
+        }
+      </code></pre> <!--Insert Code Snippet Here-->
+
+      <p>
+        The code itself isn't super complex. The data from the joystick read
+        in the arduino code as serial data which is then sent to JavaScript by
+        connecting it to the arduino via setting up serial. The joystick controls
+        the movement of a rendered circle cursor which hovers above the gradient
+        displayed on the computer screen. The rgb values that the cursor is hovering
+        over is then sent back to the arduino in order to manipulate the rgb LED.
+
+        <br><br>
+
+        One thing I want to add is that I used AI to help me smooth out data from the
+        joystick since whenever I moved it, the cursor would spazz out on the screen. 
+        This smoothing was done by adding a serial buffer.
+      </p>
+    </section>
+
+    <section>
+      <h2>Circuit Operation</h2>
+      <img src="a6-assets/a6-operation.gif" /> <!--Insert GIF Here-->
+      <p>
+        As you can see, there's a red and blue gradient on the screen and the
+        light changes based on where the cursor is.
+      </p>
+    </section>
+  </body>
+</html>
